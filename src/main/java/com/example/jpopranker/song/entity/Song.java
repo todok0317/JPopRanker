@@ -1,4 +1,4 @@
-package com.example.jpopranker.entity;
+package com.example.jpopranker.song.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

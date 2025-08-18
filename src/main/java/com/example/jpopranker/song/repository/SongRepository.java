@@ -1,6 +1,6 @@
-package com.example.jpopranker.repository;
+package com.example.jpopranker.song.repository;
 
-import com.example.jpopranker.entity.Song;
+import com.example.jpopranker.song.entity.Song;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
