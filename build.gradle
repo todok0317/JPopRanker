@@ -20,6 +20,10 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'           // REST API용
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'      // WebClient용
+    implementation 'org.jsoup:jsoup:1.17.2'                                   // HTML 파싱용
+    
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
