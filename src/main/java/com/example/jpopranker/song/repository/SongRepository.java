@@ -2,6 +2,7 @@ package com.example.jpopranker.song.repository;
 
 import com.example.jpopranker.song.entity.Song;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,4 +17,6 @@ public interface SongRepository extends JpaRepository<Song, Long> {
 
     // 랭킹 순서로 조회
     List<Song> findByChartNameOrderByRankingAsc(String chartName);
+
+    Optional<Song> findByTitleAndArtistAndChartName(String title, String artist, String chartName);
 }
