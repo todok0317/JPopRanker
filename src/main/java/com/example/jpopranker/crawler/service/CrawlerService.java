@@ -2,6 +2,7 @@ package com.example.jpopranker.crawler.service;
 
 import com.example.jpopranker.song.dto.request.SongRequestDto;
 import com.example.jpopranker.song.service.SongService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -212,5 +214,24 @@ public class CrawlerService {
         }
     }
 
+    // 매일 오전 9시에 Billboard Japan 크롤링
+    @Scheduled(cron = "0 0 9 * * *")
+    public void scheduledBillboardJapanCrawling() {
+        log.info("정기 Billboard Japan 크롤링 시작: {}", LocalDateTime.now());
+        crawlBillboardJapan();
+    }
 
+    // 매일 오전 9시 30분에 Oricon 크롤링
+    @Scheduled(cron = "0 30 9 * * *")
+    public void scheduledOriconCrawling() {
+        log.info("정기 Oricon 크롤링 시작: {}", LocalDateTime.now());
+        crawlOriconChart();
+    }
+
+    // 매주 일요일 오전 10시에 중복 데이터 정리
+    @Scheduled(cron = "0 0 10 * * SUN")
+    public void scheduledDataCleanup() {
+        log.info("정기 데이터 정리 시작: {}", LocalDateTime.now());
+        songService.cleanupDuplicates();
+    }
 }
