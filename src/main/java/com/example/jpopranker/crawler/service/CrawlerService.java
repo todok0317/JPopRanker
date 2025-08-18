@@ -2,6 +2,7 @@ package com.example.jpopranker.crawler.service;
 
 import com.example.jpopranker.song.dto.request.SongRequestDto;
 import com.example.jpopranker.song.service.SongService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -146,5 +148,90 @@ public class CrawlerService {
         }
     }
 
+    public void crawlOriconChart() {
+        try {
+            String url = "https://www.oricon.co.jp/music/rankinglab/cos/2025-08-18/";
 
+            String html = webClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+            if (html == null) {
+                log.error("Oricon HTML을 가져올 수 없습니다.");
+                return;
+            }
+
+            Document doc = Jsoup.parse(html);
+
+            // Oricon 랭킹 리스트 선택
+            Elements rankingItems = doc.select(".media-box");
+
+            List<SongRequestDto> songs = new ArrayList<>();
+
+            for (Element item : rankingItems) {
+                try {
+                    // 순위 추출
+                    Element rankElement = item.select("p.media-rank").first();
+                    if (rankElement == null) continue;
+
+                    Integer ranking = Integer.parseInt(rankElement.text().trim());
+
+                    // 제목 추출
+                    Element titleElement = item.select("li.media-title").first();
+                    if (titleElement == null) continue;
+
+                    String title = titleElement.text().trim();
+
+                    // 아티스트 추출
+                    Element artistElement = item.select("li.media-artist").first();
+                    if (artistElement == null) continue;
+
+                    String artist = artistElement.text().trim();
+
+                    if (!title.isEmpty() && !artist.isEmpty() && ranking <= 20) { // 1-20위만
+                        SongRequestDto song = new SongRequestDto(title, artist, ranking, "oricon");
+                        songs.add(song);
+
+                        log.info("Oricon {}위 - {} by {}", ranking, title, artist);
+                    }
+
+                } catch (Exception e) {
+                    log.warn("Oricon 데이터 파싱 실패: {}", e.getMessage());
+                }
+            }
+
+            // 데이터베이스에 저장
+            for (SongRequestDto song : songs) {
+                songService.saveSong(song);
+            }
+
+            log.info("Oricon 크롤링 완료! {}곡 저장됨", songs.size());
+
+        } catch (Exception e) {
+            log.error("Oricon 크롤링 중 오류 발생", e);
+        }
+    }
+
+    // 매일 오전 9시에 Billboard Japan 크롤링
+    @Scheduled(cron = "0 0 9 * * *")
+    public void scheduledBillboardJapanCrawling() {
+        log.info("정기 Billboard Japan 크롤링 시작: {}", LocalDateTime.now());
+        crawlBillboardJapan();
+    }
+
+    // 매일 오전 9시 30분에 Oricon 크롤링
+    @Scheduled(cron = "0 30 9 * * *")
+    public void scheduledOriconCrawling() {
+        log.info("정기 Oricon 크롤링 시작: {}", LocalDateTime.now());
+        crawlOriconChart();
+    }
+
+    // 매주 일요일 오전 10시에 중복 데이터 정리
+    @Scheduled(cron = "0 0 10 * * SUN")
+    public void scheduledDataCleanup() {
+        log.info("정기 데이터 정리 시작: {}", LocalDateTime.now());
+        songService.cleanupDuplicates();
+    }
 }
