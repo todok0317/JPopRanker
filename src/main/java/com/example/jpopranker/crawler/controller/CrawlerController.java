@@ -32,9 +32,28 @@ public class CrawlerController {
         return "Billboard Japan 크롤링 완료!";
     }
 
+    // Oricon 크롤링
+    @PostMapping("/oricon")
+    public String crawlOricon() {
+        log.info("Oricon 크롤링 시작");
+        crawlerService.crawlOriconChart();
+        return "Oricon 크롤링 완료!";
+    }
+
+    // 모든 차트를 한번에 크롤링
+    @PostMapping("/all")
+    public String crawlAllCharts() {
+        log.info("전체 차트 크롤링 시작");
+        crawlerService.crawlBillboardJapan();
+        crawlerService.crawlOriconChart();
+        return "전체 차트 크롤링 완료!";
+    }
+
     // 크롤링 상태 확인
     @GetMapping("/status")
     public String getStatus() {
         return "크롤링 서비스가 정상 작동 중입니다.";
     }
+    
+    
 }
