@@ -28,7 +28,7 @@ public class SongController {
 
     // 차트별 곡 조회
     @GetMapping("/chart/{chartName}")
-    public List<SongResponseDto> getSongsByChart (@PathVariable String chartName) {
+    public List<SongResponseDto> getSongsByChart(@PathVariable String chartName) {
         return songService.getSongsByChart(chartName);
     }
 
@@ -37,8 +37,9 @@ public class SongController {
     public SongResponseDto addTestSong() {
         SongRequestDto testRequest = new SongRequestDto("테스트 노래", "테스트 가수", 1, "테스트");
         return songService.saveSong(testRequest);
-        }
+    }
 
+    // 새로운 곡 추가
     @PostMapping
     public SongResponseDto addSong(@RequestBody SongRequestDto request) {
         return songService.saveSong(request);
