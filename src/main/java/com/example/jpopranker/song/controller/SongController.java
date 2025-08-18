@@ -35,8 +35,9 @@ public class SongController {
     // 테스트 용 곡 추가
     @PostMapping("/test")
     public SongResponseDto addTestSong() {
-        return songService.saveSong("테스트 노래", "테스트 가수", 1, "테스트");
-    }
+        SongRequestDto testRequest = new SongRequestDto("테스트 노래", "테스트 가수", 1, "테스트");
+        return songService.saveSong(testRequest);
+        }
 
     @PostMapping
     public SongResponseDto addSong(@RequestBody SongRequestDto request) {
