@@ -93,11 +93,83 @@ public class SongService {
                 List<Song> toDelete = duplicates.subList(1, duplicates.size());
                 songRepository.deleteAll(toDelete);
                 deletedCount += toDelete.size();
+
+                log.info("중복 제거: {} - {} ({} 차트에서 {}개 삭제)",
+                    duplicates.get(0).getTitle(),
+                    duplicates.get(0).getArtist(),
+                    duplicates.get(0).getChartName(),
+                    toDelete.size());
             }
         }
 
         log.info("중복 데이터 {}개 정리 완료", deletedCount);
         return deletedCount;
+    }
+
+    // 같은 순위의 중복 데이터 정리 (특정 차트에서 같은 순위에 여러 곡이 있는 경우)
+    @Transactional
+    public int cleanupSameRankingDuplicates(String chartName) {
+        List<Song> chartSongs = songRepository.findByChartName(chartName);
+        Map<Integer, List<Song>> rankingGroups = chartSongs.stream()
+            .collect(Collectors.groupingBy(Song::getRanking));
+
+        int deletedCount = 0;
+        for (Map.Entry<Integer, List<Song>> entry : rankingGroups.entrySet()) {
+            List<Song> songsAtSameRank = entry.getValue();
+            if (songsAtSameRank.size() > 1) {
+                // 같은 순위에 여러 곡이 있으면 가장 최신 것만 남기고 삭제
+                songsAtSameRank.sort((a, b) -> b.getChartDate().compareTo(a.getChartDate()));
+                List<Song> toDelete = songsAtSameRank.subList(1, songsAtSameRank.size());
+                songRepository.deleteAll(toDelete);
+                deletedCount += toDelete.size();
+
+                log.info("같은 순위({}) 중복 제거: {}개 삭제", entry.getKey(), toDelete.size());
+            }
+        }
+
+        log.info("{} 차트에서 같은 순위 중복 {}개 정리 완료", chartName, deletedCount);
+        return deletedCount;
+    }
+
+    // 크롤링 후 자동 데이터 정리 (중복, Unknown 등 모든 문제 해결)
+    @Transactional
+    public void autoCleanupAfterCrawling() {
+        log.info("크롤링 후 자동 데이터 정리 시작");
+
+        // 1. Unknown 아티스트 제거
+        int unknownCount = cleanupUnknownArtists();
+
+        // 2. 전체 중복 데이터 제거
+        int duplicateCount = cleanupDuplicates();
+
+        // 3. 각 차트별 같은 순위 중복 제거
+        int billboardDuplicates = cleanupSameRankingDuplicates("billboard-japan");
+        int oriconDuplicates = cleanupSameRankingDuplicates("oricon");
+
+        // 4. 빈 제목/아티스트 제거
+        int emptyCount = cleanupEmptyData();
+
+        log.info("자동 정리 완료 - Unknown: {}, 중복: {}, 같은순위: {}, 빈데이터: {}",
+            unknownCount, duplicateCount, billboardDuplicates + oriconDuplicates, emptyCount);
+    }
+
+    // 빈 제목이나 아티스트 데이터 정리
+    @Transactional
+    public int cleanupEmptyData() {
+        List<Song> allSongs = songRepository.findAll();
+        List<Song> toDelete = allSongs.stream()
+            .filter(song ->
+                song.getTitle() == null || song.getTitle().trim().isEmpty() ||
+                song.getArtist() == null || song.getArtist().trim().isEmpty() ||
+                song.getTitle().trim().length() <= 1 ||
+                song.getArtist().trim().length() <= 1 ||
+                song.getTitle().equals(song.getArtist())
+            )
+            .toList();
+
+        songRepository.deleteAll(toDelete);
+        log.info("빈 데이터 {}개 정리됨", toDelete.size());
+        return toDelete.size();
     }
 
     // 잘못된 데이터 삭제 (아티스트가 "Unknown"인 데이터)

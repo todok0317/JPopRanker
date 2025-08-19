@@ -85,4 +85,12 @@ public class SongController {
         int deletedCount = songService.cleanupDuplicates();
         return deletedCount + "개의 중복 데이터가 정리되었습니다.";
     }
+
+    @Operation(summary = "같은 순위 중복 정리", description = "특정 차트에서 같은 순위의 중복 데이터를 정리합니다.")
+    @Parameter(name = "chartName", description = "정리할 차트 이름", example = "billboard-japan")
+    @DeleteMapping("/cleanup/same-ranking/{chartName}")
+    public String cleanupSameRankingDuplicates(@PathVariable String chartName) {
+        int deletedCount = songService.cleanupSameRankingDuplicates(chartName);
+        return chartName + " 차트에서 같은 순위 중복 " + deletedCount + "개가 정리되었습니다.";
+    }
 }
